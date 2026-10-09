@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roblox Music ID Manager PRO</title>
+    <style>
+        :root {
+            --bg-color: #1e1e1e;
+            --card-bg: #2b2b2b;
+            --text-main: #ffffff;
+            --text-muted: #aaaaaa;
+            --accent: #3498db;
+            --accent-hover: #2980b9;
+            --danger: #e74c3c;
+            --danger-hover: #c0392b;
+            --success: #2ecc71;
+            --success-hover: #27ae60;
+            --border: #3a3a3a;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: var(--text-main);
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px 15px;
+            background-color: #1f1f1f;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-main);
+            font-size: 15px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            color: white;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .btn-add { background-color: var(--accent); }
+        .btn-add:hover { background-color: var(--accent-hover); }
+        
+        .btn-export { background-color: var(--success); }
+        .btn-export:hover { background-color: var(--success-hover); }
+
+        .btn-delete { background-color: var(--danger); padding: 8px 12px; font-size: 13px;}
+        .btn-delete:hover { background-color: var(--danger-hover); }
+
+        .search-bar { width: 100%; }
+
+        .table-container {
+            overflow-x: auto;
+            max-height: 50vh;
+            overflow-y: auto;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th {
+            background-color: #1f1f1f;
+            padding: 15px;
+            position: sticky;
+            top: 0;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        th:hover {
+            background-color: #333333;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        tr {
+            transition: background-color 0.1s;
+        }
+
+        tr:hover {
+            background-color: #383838;
+        }
+
+        tr.copyable {
+            cursor: pointer;
+        }
+
+        .footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        .status {
+            color: var(--text-muted);
+            font-style: italic;
+            font-size: 14px;
+        }
+
+        /* Уведомление */
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            background-color: var(--accent);
+            color: #fff;
+            text-align: center;
+            border-radius: 8px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            bottom: 30px;
+            transform: translateX(-50%);
+            font-size: 15px;
+            font-weight: bold;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            opacity: 0;
+            transition: opacity 0.3s, bottom 0.3s;
+        }
+
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            bottom: 50px;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>🎵 Roblox Music ID Manager</h1>
+
+        <!-- Добавление трека -->
+        <div class="card">
+            <div class="input-group">
+                <input type="text" id="titleInput" placeholder="Название трека (напр. Phonk)">
+                <input type="text" id="idInput" placeholder="Roblox ID (цифры)">
+                <input type="text" id="artistInput" placeholder="Исполнитель (опционально)">
+                <button class="btn-add" onclick="addTrack()">➕ Добавить</button>
+            </div>
+        </div>
+
+        <!-- Поиск -->
+        <div class="card" style="padding: 15px 20px;">
+            <input type="text" class="search-bar" id="searchInput" placeholder="🔍 Мгновенный поиск по названию, ID или автору..." onkeyup="filterTable()">
+        </div>
+
+        <!-- Таблица -->
+        <div class="card table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th onclick="sortTable('title')">Название трека ↕</th>
+                        <th onclick="sortTable('id')" style="text-align: center;">Roblox ID ↕</th>
+                        <th onclick="sortTable('artist')">Исполнитель ↕</th>
+                        <th style="width: 100px; text-align: center;">Действие</th>
+                    </tr>
+                </thead>
+                <tbody id="tableBody">
+                    <!-- Треки генерируются здесь через JS -->
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Подвал -->
+        <div class="footer">
+            <button class="btn-export" onclick="exportToTxt()">💾 Экспорт в TXT</button>
+            <div class="status" id="statusText">💡 Кликните по треку, чтобы скопировать ID</div>
+            <div class="status" id="countText" style="font-weight: bold;">Треков: 0</div>
+        </div>
+    </div>
+
+    <div id="toast">ID скопирован!</div>
+
+    <script>
+        // Инициализация данных из LocalStorage браузера
+        let tracks = JSON.parse(localStorage.getItem('roblox_music')) || [];
+        let sortDirection = 1;
+
+        // Привязка клавиши Enter для удобства
+        document.getElementById('titleInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') addTrack(); });
+        document.getElementById('idInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') addTrack(); });
+        document.getElementById('artistInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') addTrack(); });
+
+        function renderTable(data = tracks) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = ''; // Очистка таблицы
+
+            data.forEach(track => {
+                const tr = document.createElement('tr');
+                tr.className = 'copyable';
+                
+                // Копирование по клику на любую часть строки (кроме кнопки удаления)
+                tr.onclick = (e) => {
+                    if (e.target.tagName !== 'BUTTON') copyID(track.id);
+                };
+
+                tr.innerHTML = `
+                    <td>${escapeHTML(track.title)}</td>
+                    <td style="text-align: center; font-weight: bold; color: var(--accent);">${escapeHTML(track.id)}</td>
+                    <td>${escapeHTML(track.artist)}</td>
+                    <td style="text-align: center;">
+                        <button class="btn-delete" onclick="deleteTrack('${track.id}')">Удалить</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('countText').innerText = `Всего треков: ${data.length}`;
+        }
+
+        function addTrack() {
+            const title = document.getElementById('titleInput').value.trim();
+            const id = document.getElementById('idInput').value.trim().replace(/\s+/g, '');
+            const artist = document.getElementById('artistInput').value.trim() || 'Неизвестен';
+
+            if (!title || !id) {
+                showToast("❌ Введите название и ID!", "var(--danger)");
+                return;
+            }
+
+            if (!/^\d+$/.test(id)) {
+                showToast("❌ ID должен состоять только из цифр!", "var(--danger)");
+                return;
+            }
+
+            if (tracks.some(t => t.id === id)) {
+                showToast("⚠️ Этот ID уже есть в базе!", "#f39c12");
+                return;
+            }
+
+            tracks.push({ title, id, artist });
+            saveData();
+            
+            // Очистка полей ввода
+            document.getElementById('titleInput').value = '';
+            document.getElementById('idInput').value = '';
+            document.getElementById('artistInput').value = '';
+            document.getElementById('titleInput').focus();
+
+            filterTable(); // Обновляем с учетом текущего поиска
+            showToast(`✓ Добавлен: ${title}`, "var(--success)");
+        }
+
+        function deleteTrack(id) {
+            if (confirm("Точно удалить этот трек?")) {
+                tracks = tracks.filter(t => t.id !== id);
+                saveData();
+                filterTable();
+                showToast("🗑 Трек удален", "var(--danger)");
+            }
+        }
+
+        function filterTable() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = tracks.filter(t => 
+                t.title.toLowerCase().includes(query) || 
+                t.id.includes(query) || 
+                t.artist.toLowerCase().includes(query)
+            );
+            renderTable(filtered);
+        }
+
+        function sortTable(key) {
+            tracks.sort((a, b) => {
+                let valA = a[key].toLowerCase();
+                let valB = b[key].toLowerCase();
+                
+                if (key === 'id') {
+                    valA = parseInt(valA);
+                    valB = parseInt(valB);
+                }
+                
+                if (valA < valB) return -1 * sortDirection;
+                if (valA > valB) return 1 * sortDirection;
+                return 0;
+            });
+            sortDirection *= -1; // Меняем направление для следующего клика
+            filterTable();
+        }
+
+        function copyID(id) {
+            navigator.clipboard.writeText(id).then(() => {
+                showToast(`✓ ID ${id} скопирован в буфер!`, "var(--accent)");
+            }).catch(err => {
+                showToast("❌ Ошибка копирования", "var(--danger)");
+            });
+        }
+
+        function exportToTxt() {
+            if (tracks.length === 0) {
+                showToast("⚠️ База пуста!", "#f39c12");
+                return;
+            }
+
+            let content = "=== Моя библиотека музыки Roblox ===\n\n";
+            tracks.forEach(t => {
+                content += `Название: ${t.title}\nID: ${t.id}\nИсполнитель: ${t.artist}\n------------------------------\n`;
+            });
+
+            const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "Моя_Музыка_Roblox.txt";
+            link.click();
+            URL.revokeObjectURL(link.href);
+            
+            showToast("💾 Файл скачан!", "var(--success)");
+        }
+
+        function saveData() {
+            localStorage.setItem('roblox_music', JSON.stringify(tracks));
+        }
+
+        function showToast(message, color) {
+            const toast = document.getElementById("toast");
+            toast.innerText = message;
+            toast.style.backgroundColor = color;
+            toast.className = "show";
+            
+            // Если таймер уже есть, сбрасываем его
+            if(window.toastTimer) clearTimeout(window.toastTimer);
+            
+            window.toastTimer = setTimeout(function(){ 
+                toast.className = toast.className.replace("show", ""); 
+            }, 3000);
+        }
+
+        // Вспомогательная функция для защиты от XSS (если вдруг введут HTML-теги)
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, tag => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+            }[tag] || tag));
+        }
+
+        // Первичный рендер при загрузке страницы
+        renderTable();
+    </script>
+</body>
+</html>
